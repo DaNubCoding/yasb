@@ -17,4 +17,5 @@ pillow
 qasync
 requests
 obs-websocket-py
+pytweening
 git+https://github.com/amnweb/pyvda.git
