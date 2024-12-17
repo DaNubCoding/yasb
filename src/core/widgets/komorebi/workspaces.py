@@ -10,6 +10,7 @@ from core.event_enums import KomorebiEvent
 from core.widgets.base import BaseWidget
 from core.utils.komorebi.client import KomorebiClient
 from core.validation.widgets.komorebi.workspaces import VALIDATION_SCHEMA
+import pytweening
 
 try:
     from core.utils.komorebi.event_listener import KomorebiEventListener
@@ -24,7 +25,7 @@ WORKSPACE_STATUS_ACTIVE: WorkspaceStatus = "ACTIVE"
 
 class WorkspaceButton(QPushButton):
 
-    def __init__(self, workspace_index: int, parent_widget: 'WorkspaceWidget', label: str = None, active_label: str = None, populated_label: str = None, animation: bool = False):
+    def __init__(self, workspace_index: int, parent_widget: 'WorkspaceWidget', label: str, active_label: str, populated_label: str, animation: dict):
         super().__init__()
         self.komorebic = KomorebiClient()
         self.workspace_index = workspace_index
@@ -36,7 +37,12 @@ class WorkspaceButton(QPushButton):
         self.populated_label = populated_label if populated_label else self.default_label
         self.setText(self.default_label)
         self.clicked.connect(self.activate_workspace)
-        self._animation = animation
+        self._animation_enabled = animation["enabled"]
+        self._animation_fps = animation["fps"]
+        self._animation_duration = animation["duration"]
+        self._animation_easing = animation["easing"]
+        self._animation_step = 1000 / (self._animation_duration * self._animation_fps)
+        self._animation_func = getattr(pytweening, self._animation_easing)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.hide()
         
@@ -65,30 +71,26 @@ class WorkspaceButton(QPushButton):
     def activate_workspace(self):
         try:
             self.komorebic.activate_workspace(self.workspace_index)
-            if self._animation:
+            if self._animation_enabled:
                 self.animate_buttons()
         except Exception:
             logging.exception(f"Failed to focus workspace at index {self.workspace_index}")
 
-    def animate_buttons(self, duration=200, step=120):
+    def animate_buttons(self):
         #Store the initial width if not already stored
         #we need this to animate the width back to the initial width
         if not hasattr(self, '_initial_width'):
             self._initial_width = self.width()
 
         self._current_width = self.width()
+        self._animation_progress = 0 # 0.0 -> 1.0
         target_width = self.sizeHint().width()
 
-        step_duration = int(duration / step)
-        width_increment = (target_width - self._current_width) / step
-
-        self._current_step = 0
-
         def update_width():
-            if self._current_step < step:
-                self._current_width += width_increment
-                self.setFixedWidth(int(self._current_width))
-                self._current_step += 1
+            if self._animation_progress < 1:
+                self._animation_progress += self._animation_step
+                eased_progress = self._animation_func(self._animation_progress)
+                self.setFixedWidth(round(self._current_width + (target_width - self._current_width) * eased_progress))
             else:
                 self._animation_timer.stop()
                 self.setFixedWidth(target_width)
@@ -99,7 +101,7 @@ class WorkspaceButton(QPushButton):
 
         self._animation_timer = QTimer()
         self._animation_timer.timeout.connect(update_width)
-        self._animation_timer.start(step_duration)
+        self._animation_timer.start(int(1000 / self._animation_fps))
         
         
 class WorkspaceWidget(BaseWidget):
@@ -121,7 +123,7 @@ class WorkspaceWidget(BaseWidget):
             label_zero_index: bool,
             hide_empty_workspaces: bool,
             container_padding: dict,
-            animation: bool
+            animation: dict
     ):
         super().__init__(class_name="komorebi-workspaces")
         self._event_service = EventService()
@@ -299,7 +301,7 @@ class WorkspaceWidget(BaseWidget):
             workspace_btn.show()
             if workspace_btn.status != workspace_status:
                 workspace_btn.update_and_redraw(workspace_status)
-                if self._animation:
+                if self._animation["enabled"]:
                     workspace_btn.animate_buttons()
             workspace_btn.update_visible_buttons()
 

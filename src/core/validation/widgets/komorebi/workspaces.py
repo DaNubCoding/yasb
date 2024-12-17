@@ -8,7 +8,12 @@ DEFAULTS = {
     'hide_if_offline': False,
     'label_zero_index': False,
     'hide_empty_workspaces': False,
-    'animation': False,
+    'animation': {
+        'enabled': False,
+        'fps': 60,
+        'duration': 500,
+        'easing': 'easeInOutQuad'
+    },
     'container_padding': {'top': 0, 'left': 0, 'bottom': 0, 'right': 0},
 }
 
@@ -50,7 +55,58 @@ VALIDATION_SCHEMA = {
         'default': DEFAULTS['hide_empty_workspaces']
     },
     'animation': { 
-        'type': 'boolean',
+        'type': 'dict',
+        'schema': {
+            "enabled": {
+                'type': 'boolean',
+                'default': DEFAULTS['animation']['enabled']
+            },
+            "fps": {
+                'type': 'number',
+                'default': DEFAULTS['animation']['fps']
+            },
+            "duration": {
+                'type': 'number',
+                'default': DEFAULTS['animation']['duration']
+            },
+            "easing": {
+                'type': 'string',
+                'allowed': [
+                    'linear',
+                    'easeInQuad',
+                    'easeOutQuad',
+                    'easeInOutQuad',
+                    'easeInCubic',
+                    'easeOutCubic',
+                    'easeInOutCubic',
+                    'easeInQuart',
+                    'easeOutQuart',
+                    'easeInOutQuart',
+                    'easeInQuint',
+                    'easeOutQuint',
+                    'easeInOutQuint',
+                    'easeInSine',
+                    'easeOutSine',
+                    'easeInOutSine',
+                    'easeInExpo',
+                    'easeOutExpo',
+                    'easeInOutExpo',
+                    'easeInCirc',
+                    'easeOutCirc',
+                    'easeInOutCirc',
+                    'easeInElastic',
+                    'easeOutElastic',
+                    'easeInOutElastic',
+                    'easeInBack',
+                    'easeOutBack',
+                    'easeInOutBack',
+                    'easeInBounce',
+                    'easeOutBounce',
+                    'easeInOutBounce'
+                ],
+                'default': DEFAULTS['animation']['easing']
+            }
+        },
         'default': DEFAULTS['animation']
     },
     'container_padding': {
